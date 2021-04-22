@@ -25,15 +25,21 @@ const fi = (function() {
 
     },
 
-    reduce: function(collection, iteratee, acc=0) {
-      if (!(collection instanceof Array))
-        collection = Object.values(collection)
+    reduce: function(c = [], callback = () => {}, acc) {
+			let collection = c.slice(0)
 
-      for (let idx = 0; idx < collection.length; idx++)
-        acc = iteratee(acc, collection[idx], collection)
+			if (!acc) {
+				acc = collection[0]
+				collection = collection.slice(1)
+			}
 
-      return acc
-    },
+			let len = collection.length;
+
+			for (let i = 0; i < len; i++) {
+				acc = callback(acc, collection[i], collection)
+			}
+			return acc;
+		},
 
     find: function(collection, predicate) {
       if (!(collection instanceof Array))
@@ -75,23 +81,11 @@ const fi = (function() {
       return collection.filter(el => !badVal.has(el))
     },
 
-    iSort: function(arr) {
-      let currIdx = arr.length-1
-      while(currIdx > 0 && arr[currIdx-1] > arr[currIdx]) {
-        const temp = arr[currIdx-1]
-        arr[currIdx-1] = arr[currIdx]
-        arr[currIdx] = temp
-        currIdx--
-      }
-    },
-
     sortBy: function(collection, callback) {
-      const newArr = []
-      for (let val of collection) {
-        newArr.push(callback(val))
-        this.iSort(newArr)
-      }
-      return newArr
+      const newArr = [...collection]
+      return newArr.sort(function(a, b) {
+        return callback(a) - callback(b)
+      })
     },
 
     uniqSort: function(collection, iteratee) {
@@ -132,6 +126,24 @@ const fi = (function() {
 
     functions: function(collection) {
       return Object.getOwnPropertyNames(collection).filter(item => typeof collection[item] === 'function')
+    },
+
+    unpack: function(receiver, arr) {
+      for (let val of arr)
+        receiver.push(val)
+    },
+
+    flatten: function(collection, shallow, newArr=[]) {
+      if (!Array.isArray(collection)) return newArr.push(collection)
+      if (shallow) {
+        for (let val of collection)
+          Array.isArray(val) ? this.unpack(newArr, val) : newArr.push(val)
+      } else {
+        for (let val of collection) {
+          this.flatten(val, false, newArr)
+        }
+      }
+      return newArr
     },
 
 
